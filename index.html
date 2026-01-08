@@ -3,142 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GHOST OS | COMMAND CENTER</title>
+    <title>GHOST OS | NEO-DASH V3</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap');
-        
-        :root { --accent: #00f2ff; --bg: #030303; --danger: #ff1111; }
-        * { box-sizing: border-box; }
-        body { background: var(--bg); color: var(--accent); font-family: 'Share Tech Mono', monospace; margin: 0; overflow: hidden; height: 100vh; transition: 0.5s; }
-        body.alarm { --accent: var(--danger); }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
-        /* Arkaplan Grid Efekti */
-        .grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px); background-size: 50px 50px; z-index: -1; }
+        :root {
+            --cyan: #00f2ff;
+            --bg: #03080a;
+            --panel-bg: rgba(0, 20, 30, 0.6);
+            --danger: #ff0033;
+            --border: 1px solid var(--cyan);
+        }
 
-        /* Dashboard Düzeni */
-        .dashboard { display: grid; grid-template-columns: 300px 1fr 300px; height: 100vh; padding: 20px; gap: 20px; }
-        
-        .panel { border: 1px solid var(--accent); background: rgba(0,0,0,0.5); padding: 15px; position: relative; box-shadow: inset 0 0 15px rgba(0,242,255,0.1); }
-        .panel-title { position: absolute; top: -10px; left: 15px; background: var(--bg); padding: 0 10px; font-family: 'Orbitron'; font-size: 12px; border: 1px solid var(--accent); }
+        * { box-sizing: border-box; cursor: crosshair; }
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 80%),
+                linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: var(--cyan);
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.alarm { --cyan: var(--danger); }
+
+        /* Ana Çerçeve */
+        .os-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: 60px 1fr 40px;
+            height: 100vh;
+            padding: 15px;
+            gap: 15px;
+            border: 10px solid var(--cyan);
+            box-shadow: inset 0 0 50px rgba(0, 242, 255, 0.1);
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / 4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: var(--border);
+            font-family: 'Orbitron';
+            letter-spacing: 4px;
+        }
+
+        /* Paneller */
+        .panel {
+            background: var(--panel-bg);
+            border: var(--border);
+            padding: 15px;
+            position: relative;
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.05);
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron';
+            font-size: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Merkez Bölüm */
+        .main-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .core-visual {
+            width: 300px; height: 300px;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            box-shadow: 0 0 60px rgba(0, 242, 255, 0.2);
+        }
+
+        .core-inner {
+            width: 80%; height: 80%;
+            border: 10px double var(--cyan);
+            border-radius: 50%;
+            animation: rotate 20s linear infinite;
+        }
+
+        #voice-output {
+            font-family: 'Orbitron';
+            font-size: 24px;
+            text-align: center;
+            min-height: 60px;
+            text-shadow: 0 0 10px var(--cyan);
+        }
 
         /* Widgetlar */
-        .widget-item { margin-bottom: 20px; border-bottom: 1px dotted var(--accent); padding-bottom: 5px; }
-        .label { font-size: 10px; opacity: 0.7; }
-        .val { font-size: 16px; font-weight: bold; font-family: 'Orbitron'; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
+        .data-val { color: #fff; font-family: 'Orbitron'; }
 
-        /* Orta Bölüm - Saat ve Core */
-        .main-view { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(0,242,255,0.2); }
-        #clock { font-family: 'Orbitron'; font-size: 80px; font-weight: 900; text-shadow: 0 0 30px var(--accent); margin-bottom: 20px; }
-        .core-circle { width: 200px; height: 200px; border: 5px solid var(--accent); border-radius: 50%; box-shadow: 0 0 50px var(--accent); animation: pulse 2s infinite; display: flex; align-items: center; justify-content: center; }
-        
-        /* Şifre ve Status */
-        #auth { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        input { background: transparent; border: 2px solid var(--accent); color: #fff; font-size: 40px; text-align: center; font-family: 'Orbitron'; outline: none; padding: 10px; }
-        #status-bar { position: fixed; bottom: 0; width: 100%; background: var(--accent); color: #000; padding: 5px 20px; font-weight: bold; font-family: 'Orbitron'; font-size: 12px; display: flex; justify-content: space-between; }
+        .viz-bar { height: 4px; background: rgba(0, 242, 255, 0.1); margin: 5px 0; overflow: hidden; }
+        .viz-progress { height: 100%; background: var(--cyan); transition: 0.3s; }
 
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+        /* Status Bar */
+        .status-bar {
+            grid-column: 1 / 4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            border-top: var(--border);
+            padding-top: 5px;
+        }
+
+        /* Animasyonlar */
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* Login */
+        #auth-screen {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        input { 
+            background: transparent; border: 2px solid var(--cyan); color: #fff; 
+            font-family: 'Orbitron'; font-size: 40px; width: 200px; text-align: center;
+            margin: 20px; outline: none; box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
     </style>
 </head>
-<body id="b">
-    <div class="grid"></div>
+<body id="ghostBody">
 
-    <div id="auth">
-        <h1 style="font-family:'Orbitron'">GHOST OS ACCESS</h1>
-        <input type="password" id="p" placeholder="****" maxlength="4">
-        <br><button onclick="login()" style="padding:15px 50px; background:var(--accent); border:none; font-family:'Orbitron'; cursor:pointer; font-weight:bold;">ENTER SYSTEM</button>
+<div id="auth-screen">
+    <h1 style="font-family:'Orbitron'; letter-spacing: 10px;">GHOST OS ACCESS</h1>
+    <input type="password" id="pass" maxlength="4" placeholder="****">
+    <button onclick="bootSystem()" style="background:var(--cyan); border:none; padding:15px 40px; font-family:'Orbitron'; font-weight:bold; cursor:pointer;">INITIALIZE</button>
+</div>
+
+<div class="os-container">
+    <div class="header">
+        <span>STATUS: <span id="sys-status">STABLE</span></span>
+        <span>GHOST OS // NEO-DASH V3</span>
+        <span id="digital-clock">00:00:00</span>
     </div>
 
-    <div class="dashboard">
-        <div class="panel">
-            <div class="panel-title">SYSTEM MONITOR</div>
-            <div class="widget-item"><div class="label">CPU USAGE</div><div class="val" id="cpu">0%</div></div>
-            <div class="widget-item"><div class="label">MEMORY</div><div class="val">1.2 TB / 4 TB</div></div>
-            <div class="widget-item"><div class="label">ENCRYPTION</div><div class="val">AES-512</div></div>
-            <div class="widget-item"><div class="label">FIREWALL</div><div class="val" style="color:#0f0">ACTIVE</div></div>
-        </div>
+    <div class="panel">
+        <div class="panel-title">SYSTEM MONITORING <span>V.08</span></div>
+        <div class="data-row"><span>CPU LOAD</span><span class="data-val" id="cpu-val">12%</span></div>
+        <div class="viz-bar"><div class="viz-progress" id="cpu-bar" style="width: 12%"></div></div>
+        
+        <div class="data-row"><span>MEM USAGE</span><span class="data-val">42.8 GB</span></div>
+        <div class="viz-bar"><div class="viz-progress" style="width: 65%"></div></div>
 
-        <div class="main-view">
-            <div id="clock">00:00:00</div>
-            <div class="core-circle"><div style="font-size:12px; font-family:'Orbitron'">GHOST</div></div>
-            <div id="voice-out" style="margin-top: 30px; font-size: 20px; text-align: center; color: #fff;">SİSTEM BEKLEMEDE...</div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-title">COMMAND LOGS</div>
-            <div id="logs" style="font-size: 11px; color: rgba(255,255,255,0.5)">
-                > System initialized...<br>
-                > Port 8080 secure...<br>
-                > Ghost protocol active...
-            </div>
+        <div class="data-row"><span>CORE TEMP</span><span class="data-val">34°C</span></div>
+        <div style="margin-top:20px; border-top: 1px solid rgba(0, 242, 255, 0.2); padding-top:10px;">
+            <div style="font-size:10px; opacity:0.6;">ENCRYPTION KEY:</div>
+            <div style="font-size:11px;">0x8821_GHOST_PRO_99</div>
         </div>
     </div>
 
-    <div id="status-bar">
-        <span>GHOST SOFTWARE v2.0 - PROFESSIONAL EDITION</span>
-        <span id="mic-ind">MIC: READY</span>
+    <div class="main-display">
+        <div id="voice-output">AWAITING COMMAND...</div>
+        <div class="core-visual">
+            <div class="core-inner"></div>
+            <div style="position:absolute; font-family:'Orbitron'; font-size:12px; letter-spacing:2px;">GHOST</div>
+        </div>
+        <div style="width:100%; max-width:500px; border:1px solid rgba(0,242,255,0.2); padding:10px; font-size:12px;">
+            <span style="color:rgba(0,242,255,0.5)">COMMAND_LOG:</span> <span id="last-cmd">none</span>
+        </div>
     </div>
+
+    <div class="panel">
+        <div class="panel-title">SUBSYSTEMS <span>READY</span></div>
+        <div class="data-row"><span>NETWORK</span><span class="data-val" style="color:#0f0">SECURE</span></div>
+        <div class="data-row"><span>FIREWALL</span><span class="data-val">ACTIVE</span></div>
+        <div class="data-row"><span>SAT-LINK</span><span class="data-val">STABLE</span></div>
+        
+        <div style="height:150px; border:1px solid rgba(0,242,255,0.1); margin-top:20px; padding:5px; font-size:10px; overflow-y:hidden;" id="log-box">
+            > Initializing Ghost OS...<br>
+            > Loading Neural Modules...<br>
+            > Audio Drivers Loaded...<br>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span>USER: ADMIN</span>
+        <span>MIC STATUS: <span id="mic-label" style="font-weight:bold;">READY</span></span>
+        <span>LOCATION: ENCRYPTED</span>
+    </div>
+</div>
 
 <script>
-    let rec;
+    let recognition;
     let speaking = false;
+    let lockMic = false;
 
-    function updateClock() {
+    // Saat ve Sahte Veri Güncelleyici
+    function updateHUD() {
         const now = new Date();
-        document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') + ":" + now.getSeconds().toString().padStart(2, '0');
-        document.getElementById('cpu').innerText = Math.floor(Math.random() * 15) + 5 + "%";
-    }
-    setInterval(updateClock, 1000);
-
-    function login() {
-        if(document.getElementById('p').value === "1970") {
-            document.getElementById('auth').style.display = 'none';
-            initOS();
-        }
-    }
-
-    function talk(text) {
-        speaking = true;
-        document.getElementById('voice-out').innerText = text;
-        const m = new SpeechSynthesisUtterance(text);
-        m.lang = 'tr-TR';
-        m.onend = () => { speaking = false; listen(); };
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(m);
-    }
-
-    function initOS() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        rec = new SR();
-        rec.lang = 'tr-TR';
-        rec.continuous = true;
-        rec.onresult = (e) => {
-            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-            processCmd(cmd);
-        };
-        talk("Sistem uyandırıldı. İkinci ekran komuta merkezi aktif.");
-    }
-
-    function listen() { if(!speaking) try { rec.start(); } catch(e) {} }
-
-    function processCmd(cmd) {
-        let log = document.getElementById('logs');
-        log.innerHTML += "<br>> " + cmd;
+        document.getElementById('digital-clock').innerText = now.toTimeString().split(' ')[0];
         
-        if(cmd.includes("kırmızı alarm")) {
-            document.getElementById('b').classList.add('alarm');
-            talk("Kırmızı alarm! Savunma moduna geçiliyor!");
-        } else if(cmd.includes("normal")) {
-            document.getElementById('b').classList.remove('alarm');
-            talk("Sistem normale döndü.");
-        } else if(cmd.includes("araştır") || cmd.includes("nedir")) {
-            let q = cmd.replace("araştır", "").replace("nedir", "");
-            talk(q + " araştırılıyor.");
-            window.open("https://www.google.com/search?q=" + q, "_blank");
-        } else {
-            talk("Anlaşıldı efendim: " + cmd);
+        const cpu = Math.floor(Math.random() * 20) + 10;
+        document.getElementById('cpu-val').innerText = cpu + "%";
+        document.getElementById('cpu-bar').style.width = cpu + "%";
+    }
+    setInterval(updateHUD, 1000);
+
+    function bootSystem() {
+        if(document.getElementById('pass').value === "1970") {
+            document.getElementById('auth-screen').style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById('auth-screen').style.display = "none";
+                initGhost();
+            }, 500);
         }
     }
-    setInterval(() => { if(!speaking) listen(); }, 2000);
+
+    function ghostTalk(text) {
+        speaking = true;
+        lockMic = true;
+        if(recognition) try { recognition.stop(); } catch(e) {}
+
+        document.getElementById('voice-output').innerText = text;
+        document.getElementById('mic-label').innerText = "SYSTEM TALKING";
+        document.getElementById('mic-label').style.color = "#ffb800";
+
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'tr-TR';
+        msg.rate = 1.0;
+        msg.pitch = document.body.classList.contains('alarm') ? 0.6 : 0.9;
+
+        msg.onend = () => {
+            speaking = false;
+            setTimeout(() => { lockMic = false; listen(); }, 600);
+        };
+
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(msg);
+    }
+
+    function initGhost() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'tr-TR';
+        recognition.continuous = false;
+
+        recognition.onresult = (e) => {
+            if(lockMic) return;
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            handleCommands(cmd);
+        };
+
+        recognition.onend = () => { if(!speaking && !lockMic) listen(); };
+        ghostTalk("V3 protokolü aktif. Komuta merkezi kontrolünüzde.");
+    }
+
+    function listen() {
+        if(speaking || lockMic) return;
+        try { 
+            recognition.start(); 
+            document.getElementById('mic-label').innerText = "LISTENING";
+            document.getElementById('mic-label').style.color = var(--cyan);
+        } catch(e) {}
+    }
+
+    function handleCommands(cmd) {
+        document.getElementById('last-cmd').innerText = cmd;
+        const lb = document.getElementById('log-box');
+        lb.innerHTML += `> ${cmd}<br>`;
+        lb.scrollTop = lb.scrollHeight;
+
+        if(cmd.includes("alarm") || cmd.includes("tehdit")) {
+            document.body.classList.add('alarm');
+            document.getElementById('sys-status').innerText = "CRITICAL";
+            ghostTalk("Kırmızı alarm! Tüm savunma protokolleri devreye alındı.");
+        } 
+        else if(cmd.includes("güvenli") || cmd.includes("kapat")) {
+            document.body.classList.remove('alarm');
+            document.getElementById('sys-status').innerText = "STABLE";
+            ghostTalk("Sistem normale döndü.");
+        }
+        else if(cmd.includes("araştır") || cmd.includes("nedir")) {
+            let search = cmd.replace("araştır", "").replace("nedir", "");
+            ghostTalk(search + " için internet ağını tarıyorum.");
+            setTimeout(() => window.open("https://www.google.com/search?q=" + search, "_blank"), 1500);
+        }
+        else {
+            ghostTalk("Komut işlendi: " + cmd);
+        }
+    }
+
+    setInterval(() => { if(!speaking && !lockMic) listen(); }, 2000);
 </script>
+
 </body>
 </html>
