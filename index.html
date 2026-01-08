@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST OS | COMMAND CENTER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap');
+        
+        :root { --accent: #00f2ff; --bg: #030303; --danger: #ff1111; }
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: var(--accent); font-family: 'Share Tech Mono', monospace; margin: 0; overflow: hidden; height: 100vh; transition: 0.5s; }
+        body.alarm { --accent: var(--danger); }
+
+        /* Arkaplan Grid Efekti */
+        .grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px); background-size: 50px 50px; z-index: -1; }
+
+        /* Dashboard Düzeni */
+        .dashboard { display: grid; grid-template-columns: 300px 1fr 300px; height: 100vh; padding: 20px; gap: 20px; }
+        
+        .panel { border: 1px solid var(--accent); background: rgba(0,0,0,0.5); padding: 15px; position: relative; box-shadow: inset 0 0 15px rgba(0,242,255,0.1); }
+        .panel-title { position: absolute; top: -10px; left: 15px; background: var(--bg); padding: 0 10px; font-family: 'Orbitron'; font-size: 12px; border: 1px solid var(--accent); }
+
+        /* Widgetlar */
+        .widget-item { margin-bottom: 20px; border-bottom: 1px dotted var(--accent); padding-bottom: 5px; }
+        .label { font-size: 10px; opacity: 0.7; }
+        .val { font-size: 16px; font-weight: bold; font-family: 'Orbitron'; }
+
+        /* Orta Bölüm - Saat ve Core */
+        .main-view { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(0,242,255,0.2); }
+        #clock { font-family: 'Orbitron'; font-size: 80px; font-weight: 900; text-shadow: 0 0 30px var(--accent); margin-bottom: 20px; }
+        .core-circle { width: 200px; height: 200px; border: 5px solid var(--accent); border-radius: 50%; box-shadow: 0 0 50px var(--accent); animation: pulse 2s infinite; display: flex; align-items: center; justify-content: center; }
+        
+        /* Şifre ve Status */
+        #auth { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input { background: transparent; border: 2px solid var(--accent); color: #fff; font-size: 40px; text-align: center; font-family: 'Orbitron'; outline: none; padding: 10px; }
+        #status-bar { position: fixed; bottom: 0; width: 100%; background: var(--accent); color: #000; padding: 5px 20px; font-weight: bold; font-family: 'Orbitron'; font-size: 12px; display: flex; justify-content: space-between; }
+
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+    </style>
+</head>
+<body id="b">
+    <div class="grid"></div>
+
+    <div id="auth">
+        <h1 style="font-family:'Orbitron'">GHOST OS ACCESS</h1>
+        <input type="password" id="p" placeholder="****" maxlength="4">
+        <br><button onclick="login()" style="padding:15px 50px; background:var(--accent); border:none; font-family:'Orbitron'; cursor:pointer; font-weight:bold;">ENTER SYSTEM</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="panel">
+            <div class="panel-title">SYSTEM MONITOR</div>
+            <div class="widget-item"><div class="label">CPU USAGE</div><div class="val" id="cpu">0%</div></div>
+            <div class="widget-item"><div class="label">MEMORY</div><div class="val">1.2 TB / 4 TB</div></div>
+            <div class="widget-item"><div class="label">ENCRYPTION</div><div class="val">AES-512</div></div>
+            <div class="widget-item"><div class="label">FIREWALL</div><div class="val" style="color:#0f0">ACTIVE</div></div>
+        </div>
+
+        <div class="main-view">
+            <div id="clock">00:00:00</div>
+            <div class="core-circle"><div style="font-size:12px; font-family:'Orbitron'">GHOST</div></div>
+            <div id="voice-out" style="margin-top: 30px; font-size: 20px; text-align: center; color: #fff;">SİSTEM BEKLEMEDE...</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">COMMAND LOGS</div>
+            <div id="logs" style="font-size: 11px; color: rgba(255,255,255,0.5)">
+                > System initialized...<br>
+                > Port 8080 secure...<br>
+                > Ghost protocol active...
+            </div>
+        </div>
+    </div>
+
+    <div id="status-bar">
+        <span>GHOST SOFTWARE v2.0 - PROFESSIONAL EDITION</span>
+        <span id="mic-ind">MIC: READY</span>
+    </div>
+
+<script>
+    let rec;
+    let speaking = false;
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') + ":" + now.getSeconds().toString().padStart(2, '0');
+        document.getElementById('cpu').innerText = Math.floor(Math.random() * 15) + 5 + "%";
+    }
+    setInterval(updateClock, 1000);
+
+    function login() {
+        if(document.getElementById('p').value === "1970") {
+            document.getElementById('auth').style.display = 'none';
+            initOS();
+        }
+    }
+
+    function talk(text) {
+        speaking = true;
+        document.getElementById('voice-out').innerText = text;
+        const m = new SpeechSynthesisUtterance(text);
+        m.lang = 'tr-TR';
+        m.onend = () => { speaking = false; listen(); };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(m);
+    }
+
+    function initOS() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        rec = new SR();
+        rec.lang = 'tr-TR';
+        rec.continuous = true;
+        rec.onresult = (e) => {
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            processCmd(cmd);
+        };
+        talk("Sistem uyandırıldı. İkinci ekran komuta merkezi aktif.");
+    }
+
+    function listen() { if(!speaking) try { rec.start(); } catch(e) {} }
+
+    function processCmd(cmd) {
+        let log = document.getElementById('logs');
+        log.innerHTML += "<br>> " + cmd;
+        
+        if(cmd.includes("kırmızı alarm")) {
+            document.getElementById('b').classList.add('alarm');
+            talk("Kırmızı alarm! Savunma moduna geçiliyor!");
+        } else if(cmd.includes("normal")) {
+            document.getElementById('b').classList.remove('alarm');
+            talk("Sistem normale döndü.");
+        } else if(cmd.includes("araştır") || cmd.includes("nedir")) {
+            let q = cmd.replace("araştır", "").replace("nedir", "");
+            talk(q + " araştırılıyor.");
+            window.open("https://www.google.com/search?q=" + q, "_blank");
+        } else {
+            talk("Anlaşıldı efendim: " + cmd);
+        }
+    }
+    setInterval(() => { if(!speaking) listen(); }, 2000);
+</script>
+</body>
+</html>
