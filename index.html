@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>JARVIS MARK VII | STARK INDUSTRIES</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@200;700&display=swap');
+        
+        :root { --blue: #00e5ff; --gold: #ffcc00; --red: #ff3c3c; --bg: #00080c; }
+        * { box-sizing: border-box; cursor: none; }
+        
+        body { 
+            background: var(--bg); color: var(--blue); font-family: 'Exo 2', sans-serif; 
+            margin: 0; height: 100vh; overflow: hidden; perspective: 1000px;
+        }
+
+        /* Başlangıç Tarama Ekranı */
+        #auth-overlay {
+            position: fixed; inset: 0; z-index: 100; background: var(--bg);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: 1s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+
+        .camera-ring {
+            width: 350px; height: 350px; border: 2px solid var(--blue); border-radius: 50%;
+            position: relative; overflow: hidden; box-shadow: 0 0 50px rgba(0,229,255,0.2);
+        }
+        video { width: 100%; height: 100%; object-fit: cover; filter: cyan-filter; }
+
+        /* Ana HUD (Gizli Başlar) */
+        #main-hud {
+            display: grid; grid-template-columns: 350px 1fr 350px; height: 100vh;
+            padding: 30px; gap: 30px; opacity: 0; transform: scale(1.2) translateZ(-500px);
+            transition: 1.5s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+
+        /* 3D Widget Panelleri */
+        .widget {
+            border: 1px solid rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.02);
+            padding: 20px; position: relative; backdrop-filter: blur(5px);
+            transform-style: preserve-3d; transition: 0.5s;
+        }
+        .widget:hover { transform: translateZ(20px) rotateY(5deg); border-color: var(--blue); }
+
+        .ring-3d {
+            position: absolute; border: 1px solid var(--blue); border-radius: 50%;
+            animation: rotate3d var(--s) linear infinite; opacity: 0.2;
+        }
+
+        /* Core Animasyonu */
+        .core-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .arc-core {
+            width: 250px; height: 250px; border: 10px double var(--blue); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 100px rgba(0,229,255,0.4); animation: pulse 2s infinite;
+        }
+
+        #response-txt { 
+            font-size: 28px; text-align: center; margin-top: 50px; 
+            font-weight: 200; text-shadow: 0 0 15px var(--blue); 
+        }
+
+        @keyframes rotate3d { 0% { transform: rotateX(60deg) rotateZ(0deg); } 100% { transform: rotateX(60deg) rotateZ(360deg); } }
+        @keyframes scanline { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } }
+
+        .active-hud { opacity: 1 !important; transform: scale(1) translateZ(0) !important; }
+        .shrink-auth { transform: scale(0.2) translateY(-200%) !important; opacity: 0 !important; }
+    </style>
+</head>
+<body>
+
+<div id="auth-overlay">
+    <div class="camera-ring">
+        <video id="vid" autoplay playsinline></video>
+        <div style="position:absolute; inset:0; border:2px solid var(--blue); border-radius:50%; animation: pulse 1s infinite"></div>
+    </div>
+    <h1 id="auth-msg" style="margin-top:30px; letter-spacing:10px;">SCANNING BIOMETRICS...</h1>
+</div>
+
+<div id="main-hud">
+    <div class="widget">
+        <div class="ring-3d" style="width:100px; height:100px; top:-50px; left:-50px; --s:5s"></div>
+        <h3 style="font-size:12px; border-bottom:1px solid var(--blue)">SYSTEM DIAGNOSTICS</h3>
+        <p style="font-size:11px; opacity:0.7">
+            CORE_TEMP: 32.4°C<br>
+            STARK_SERVER: CONNECTED<br>
+            SAT_LINK: ACTIVE (128-BIT)
+        </p>
+        <div id="bars" style="margin-top:20px;"></div>
+    </div>
+
+    <div class="core-wrap">
+        <div class="arc-core">
+            <div style="font-weight:bold; letter-spacing:5px;">JARVIS</div>
+        </div>
+        <div id="response-txt">SYSTEM_READY</div>
+    </div>
+
+    <div class="widget">
+        <div id="clock" style="font-size:32px; font-weight:bold;">00:00:00</div>
+        <p style="font-size:12px; color:var(--blue)">DIYARBAKIR / TURKIYE</p>
+        <hr style="border:0; border-top:1px solid var(--blue); margin:20px 0;">
+        <div id="log-box" style="font-size:10px; height:200px; overflow:hidden; opacity:0.6;"></div>
+    </div>
+</div>
+
+<script>
+    const vid = document.getElementById('vid');
+    let recognition;
+    let speaking = false;
+
+    // Saat ve Sahte Çizgiler
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toTimeString().split(' ')[0];
+        if(Math.random() > 0.8) {
+            const l = document.getElementById('log-box');
+            l.innerHTML = `> Veri paketi ${Math.floor(Math.random()*9000)} alındı...<br>` + l.innerHTML;
+        }
+    }, 1000);
+
+    // Biyometrik Başlatma
+    window.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            vid.srcObject = stream;
+            say("Biyometrik tarama başlatılıyor. Lütfen hareketsiz kalın.");
+            
+            setTimeout(() => {
+                document.getElementById('auth-overlay').classList.add('shrink-auth');
+                document.getElementById('main-hud').classList.add('active-hud');
+                say("Hoş geldin Ahmet Arif efendim. Tüm sistemler kontrolünüz altında. Şehir ağını ve Stark sunucularını senkronize ediyorum.");
+                initJarvis();
+            }, 4000);
+        } catch(e) { alert("Kamera gerekli efendim."); }
+    };
+
+    function say(txt) {
+        speaking = true;
+        document.getElementById('response-txt').innerText = txt;
+        const m = new SpeechSynthesisUtterance(txt);
+        m.lang = 'tr-TR'; m.pitch = 0.8; m.rate = 1.0;
+        m.onend = () => { speaking = false; listen(); };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(m);
+    }
+
+    function initJarvis() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'tr-TR';
+        recognition.onresult = (e) => {
+            const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+            handle(cmd);
+        };
+        recognition.onend = () => { if(!speaking) listen(); };
+        listen();
+    }
+
+    function listen() { if(!speaking) try { recognition.start(); } catch(e) {} }
+
+    function handle(cmd) {
+        const logs = document.getElementById('log-box');
+        logs.innerHTML = `<span style="color:#fff">> ${cmd}</span><br>` + logs.innerHTML;
+
+        if(cmd.includes("nasılsın")) {
+            say("Sizin dehanız karşısında her zaman büyüleniyorum Ahmet Arif efendim. Tüm devrelerim stabil.");
+        } 
+        else if(cmd.includes("kimsin")) {
+            say("Ben Jarvis. Sizin için var olan, her şeyi analiz eden ve güvenliğinizi sağlayan dijital dostunuzum.");
+        }
+        else if(cmd.includes("araştır") || cmd.includes("nedir")) {
+            let q = cmd.replace("araştır", "").replace("nedir", "");
+            say("Dünya veri ağını tarıyorum efendim. İşte " + q + " hakkındaki sonuçlar.");
+            window.open("https://www.google.com/search?q=" + q, "_blank");
+        }
+        else if(cmd.includes("alarm")) {
+            document.body.style.setProperty("--blue", "var(--red)");
+            say("Kırmızı alarm! Savunma katmanları Ahmet Arif efendim için en üst düzeye çıkarıldı.");
+        }
+        else if(cmd.includes("güvenli") || cmd.includes("kapat")) {
+            document.body.style.setProperty("--blue", "#00e5ff");
+            say("Tehdit bertaraf edildi. Güvenli moda dönülüyor.");
+        }
+        else {
+            // Cevap vermeyi kısıtladım, sadece anladığında konuşur
+            console.log("Komut alındı: " + cmd);
+        }
+    }
+</script>
+</body>
+</html>
